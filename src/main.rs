@@ -3,13 +3,32 @@ pub mod scrapers;
 pub mod utils;
 
 use anyhow::{Result, Context};
+use moka::sync::Cache as GenericCache;
+use structs::kirja::Kirja;
 
-pub fn get_page_html(url: &String) -> Result<String> {
+pub type Cache = GenericCache<String, String>;
+
+pub fn get_page_html(url: &String, cache: &Option<&mut Cache>) -> Result<String> {
+    match cache {
+        Some(cache) => {
+            match cache.get(url) {
+                Some(data) => return Ok(data),
+                None => {},
+            }
+        },
+        None => {},
+    }
     let response = reqwest::blocking::get(
         url
     )?;
 
-    response.text().context("Failed to get page text content")
+    let text = response.text()?;
+
+    if let Some(cache) = cache {
+        cache.insert(url.to_string(), text.clone());
+    }
+
+    Ok(text)
 }
 
 pub fn parse_html(raw: &str) -> scraper::Html {
@@ -22,23 +41,25 @@ pub fn parse_json(raw: &str) -> Result<serde_json::Value> {
 }
 
 /// The main method you should be using
-pub fn search_book(name: String, selected_scraper: scrapers::Scrapers) -> Result<()> {
+pub fn search_book(name: String, selected_scraper: scrapers::Scrapers, cache: Option<&mut Cache>) -> Result<Vec<Kirja>> {
     let scraper = scrapers::get_instance(selected_scraper);
 
     println!("Downloading page...");
     let url = scraper.get_page_url(&name);
-    let html = get_page_html(&url).context("Failed to get page html")?;
+    let html = get_page_html(&url, &cache).context("Failed to get page html")?;
 
     println!("Parsing html...");
     let document = parse_html(&html);
 
     println!("Extracting data...");
-    let items = scraper.parse_document(document, &name)?;
+    let items = scraper.parse_document(document, &name, &cache)?;
 
     println!("{:#?}", items);
-    Ok(())
+    Ok(items)
 }
 
 fn main() {
-    search_book("bios 2".to_string(), scrapers::Scrapers::Sanomapro).unwrap();
+    let mut cache = Cache::new(10_000);
+    search_book("bios 2".to_string(), scrapers::Scrapers::Sanomapro, Some(&mut cache)).unwrap();
+    search_book("bios 2".to_string(), scrapers::Scrapers::Sanomapro, Some(&mut cache)).unwrap();
 }

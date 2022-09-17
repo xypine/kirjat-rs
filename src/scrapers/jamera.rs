@@ -2,8 +2,10 @@ use scraper::{Selector, ElementRef};
 use anyhow::{Result, Context};
 
 use super::Scraper;
-use crate::{structs::{kirja::{Condition, Kirja, Links}, currency::Currency}};
+use crate::{structs::{kirja::{Condition, Kirja, Links}, currency::Currency}, Cache};
 
+
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Jamera {
 
 }
@@ -30,7 +32,7 @@ impl Scraper for Jamera {
         format!("https://kauppa.jamera.net/kauppa/haku/?q={}", book_name)
     }
 
-    fn parse_document(&self, document: scraper::Html, _book_name: &String) -> Result<Vec<crate::structs::kirja::Kirja>> {
+    fn parse_document(&self, document: scraper::Html, _book_name: &String, _cache: &Option<&mut Cache>) -> Result<Vec<crate::structs::kirja::Kirja>> {
         let mut out = vec![];
 
         let table_selector = Selector::parse("table.tuotteet_flex")
