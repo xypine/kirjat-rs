@@ -5,7 +5,7 @@ use super::currency::Currency;
 #[derive(Clone, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[derive(Serialize, Deserialize)]
 pub struct Kirja {
-    pub id: usize,
+    pub id: String,
     pub source: String,
     pub name: String,
     pub conditions: Vec<Condition>,

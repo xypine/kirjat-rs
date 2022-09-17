@@ -30,7 +30,7 @@ impl Scraper for Jamera {
         format!("https://kauppa.jamera.net/kauppa/haku/?q={}", book_name)
     }
 
-    fn parse_document(&self, document: scraper::Html) -> Result<Vec<crate::structs::kirja::Kirja>> {
+    fn parse_document(&self, document: scraper::Html, _book_name: &String) -> Result<Vec<crate::structs::kirja::Kirja>> {
         let mut out = vec![];
 
         let table_selector = Selector::parse("table.tuotteet_flex")
@@ -62,8 +62,7 @@ impl Scraper for Jamera {
             let condition_containers: Vec<ElementRef> = product.select(&condition_selector).collect();
             
             if ids.len() > 0 && names.len() > 0 {
-                let id_str = ids[0].value().attr("name").context("Couldn't find expected id")?;
-                let id: usize = id_str.parse().context("Couldn't parse id")?;
+                let id = ids[0].value().attr("name").context("Couldn't find expected id")?.to_string();
                 let name = names[0].text().collect::<Vec<&str>>().join("");
 
                 //println!("{}: {}", id, name);

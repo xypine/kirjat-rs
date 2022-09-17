@@ -4,8 +4,6 @@ pub mod utils;
 
 use anyhow::{Result, Context};
 
-use crate::scrapers::Scraper;
-
 pub fn get_page_html(url: &String) -> Result<String> {
     let response = reqwest::blocking::get(
         url
@@ -16,6 +14,11 @@ pub fn get_page_html(url: &String) -> Result<String> {
 
 pub fn parse_html(raw: &str) -> scraper::Html {
     scraper::Html::parse_document(raw)
+}
+
+pub fn parse_json(raw: &str) -> Result<serde_json::Value> {
+    let a = serde_json::from_str(raw).context("")?;
+    return Ok(a);
 }
 
 /// The main method you should be using
@@ -30,7 +33,7 @@ pub fn search_book(name: String, selected_scraper: scrapers::Scrapers) -> Result
     let document = parse_html(&html);
 
     println!("Extracting data...");
-    let items = scraper.parse_document(document)?;
+    let items = scraper.parse_document(document, &name)?;
 
     println!("{:#?}", items);
     Ok(())
