@@ -3,7 +3,7 @@ use scraper::{Selector, ElementRef};
 
 use crate::{structs::{kirja::{Kirja, Links, Condition}, currency::Currency}, Cache};
 
-use super::Scraper;
+use super::Source;
 
 const SEARCH_API_URL_BASE: &str = "https://api.addsearch.com/v1/search/";
 
@@ -78,7 +78,7 @@ impl Sanomapro {
     }
 }
 
-impl Scraper for Sanomapro {
+impl Source for Sanomapro {
     fn get_store_name(&self) -> &'static str {
         "Sanomapro"
     }

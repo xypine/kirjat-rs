@@ -1,5 +1,5 @@
 pub mod structs;
-pub mod scrapers;
+pub mod sources;
 pub mod utils;
 pub mod features;
 
@@ -52,8 +52,8 @@ pub fn parse_json(raw: &str) -> Result<serde_json::Value> {
 }
 
 /// The main method you should be using
-pub fn search_book(name: &String, selected_scraper: scrapers::Scrapers, cache: &Option<&mut Cache>) -> Result<Vec<Kirja>> {
-    let scraper = scrapers::get_instance(selected_scraper);
+pub fn search_book(name: &String, selected_scraper: sources::Sources, cache: &Option<&mut Cache>) -> Result<Vec<Kirja>> {
+    let scraper = sources::get_instance(selected_scraper);
 
     // println!("Downloading page...");
     let url = scraper.get_page_url(&name);
@@ -69,7 +69,7 @@ pub fn search_book(name: &String, selected_scraper: scrapers::Scrapers, cache: &
 
 pub fn search_book_from_all_sources(name: &String, cache: &Option<&mut Cache>) -> Result<Vec<Kirja>> {
     let mut out = vec![];
-    for scraper in scrapers::AVAILABLE_SCRAPERS {
+    for scraper in sources::AVAILABLE_SOURCES {
         let mut items = search_book(name, scraper, cache)?;
         out.append(&mut items);
     }

@@ -1,7 +1,7 @@
 use scraper::{Selector, ElementRef};
 use anyhow::{Result, Context};
 
-use super::Scraper;
+use super::Source;
 use crate::{structs::{kirja::{Condition, Kirja, Links}, currency::Currency}, Cache};
 
 
@@ -18,7 +18,7 @@ impl Jamera {
     }
 }
 
-impl Scraper for Jamera {
+impl Source for Jamera {
 
     fn get_store_name(&self) -> &'static str {
         "Jamera"
