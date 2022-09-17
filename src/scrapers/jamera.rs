@@ -116,7 +116,7 @@ impl Scraper for Jamera {
                 }
                 //println!("");
 
-                let source = self.get_store_name().to_string();
+                let source = self.get_store_url().to_string();
                 let buy_link_href = names[0].value().attr("href").context("could not find store href")?;
                 let buy_link = format!("{}{}", self.get_store_url(), buy_link_href);
                 let image_link: Option<String>;

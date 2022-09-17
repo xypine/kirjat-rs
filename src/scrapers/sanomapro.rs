@@ -1,6 +1,7 @@
 use anyhow::{Context, Result, Ok};
+use scraper::{Selector, ElementRef};
 
-use crate::structs::kirja::{Kirja, Links};
+use crate::structs::{kirja::{Kirja, Links, Condition}, currency::Currency};
 
 use super::Scraper;
 
@@ -24,6 +25,55 @@ impl Sanomapro {
             .split("&").collect::<Vec<&str>>();
         let key = *key_step.get(0).context("couldn't extract search key (step 2)")?;
         Ok(key.to_string())
+    }
+
+    fn get_conditions(&self, url: &String) -> Result<Vec<Condition>> {
+        println!("Fetching conditions from url {}...", url);
+        let mut out = vec![];
+
+        let html = crate::get_page_html(url)?;
+        let document = crate::parse_html(&html);
+
+        let options_selector = Selector::parse(".nested.options-list")
+            .expect("Failed to construct selector");
+        let options_containers = document.select(&options_selector)
+            .collect::<Vec<ElementRef>>();
+        let options_container = options_containers
+            .first()
+            .context("Failed to locate option container")?;
+        
+        let option_selector = Selector::parse(".field.choice")
+            .expect("Failed to construct selector");
+        let name_selector = Selector::parse(".product-name")
+            .expect("Failed to construct selector");
+        let price_selector = Selector::parse(".price")
+            .expect("Failed to construct selector");
+        for option in options_container.select(&option_selector) {
+            let names = option.select(&name_selector).collect::<Vec<ElementRef>>();
+            let prices = option.select(&price_selector).collect::<Vec<ElementRef>>();
+
+            let name = names.first().context("Condition has no name")?
+                .text().collect::<Vec<&str>>().join("");
+            
+            let price_str = prices.first().context("Condition has no price")?
+                .text().collect::<Vec<&str>>().join("");
+            let mut cleaned_price = price_str.replace("€", "");
+            cleaned_price = cleaned_price.trim().to_string();
+            let split: Vec<&str> = cleaned_price.split(",").collect();
+            let euros: isize = split.get(0).context("failed to parse price (stage 1e)")?.parse()
+                .context("failed to parse price (stage 2e)")?;
+            let cents: isize = split.get(1).context("failed to parse price (stage 1c)")?.parse()
+                .context("failed to parse price (stage 2c)")?;
+            let price = Currency::from_euros_and_cents(euros, cents);
+
+            out.push(Condition {
+                name,
+                available: true,
+                price
+            });
+        }
+        
+        Ok(out)
     }
 }
 
@@ -72,6 +122,9 @@ impl Scraper for Sanomapro {
                                                 let serde_json::Value::String(title) = title &&
                                                 let serde_json::Value::Object(images) = images
                                             {
+                                                // Get prices
+                                                let conditions = self.get_conditions(url)?;
+
                                                 let mut image: Option<String> = None;
                                                 if images.len() > 0 {
                                                     if let Some(imgval) = images.get("main") {
@@ -88,7 +141,7 @@ impl Scraper for Sanomapro {
                                                         image
                                                     },
                                                     source: self.get_store_url().to_string(),
-                                                    ..Default::default()
+                                                    conditions
                                                 })
                                             }
                                         }
