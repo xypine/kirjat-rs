@@ -1,6 +1,7 @@
 pub mod structs;
 pub mod scrapers;
 pub mod utils;
+pub mod features;
 
 use std::time::{Instant, Duration};
 
@@ -54,14 +55,14 @@ pub fn parse_json(raw: &str) -> Result<serde_json::Value> {
 pub fn search_book(name: &String, selected_scraper: scrapers::Scrapers, cache: &Option<&mut Cache>) -> Result<Vec<Kirja>> {
     let scraper = scrapers::get_instance(selected_scraper);
 
-    println!("Downloading page...");
+    // println!("Downloading page...");
     let url = scraper.get_page_url(&name);
     let html = get_page_html(&url, &cache).context("Failed to get page html")?;
 
-    println!("Parsing html...");
+    // println!("Parsing html...");
     let document = parse_html(&html);
 
-    println!("Extracting data...");
+    // println!("Extracting data...");
     let items = scraper.parse_document(document, &name, cache)?;
     Ok(items)
 }
@@ -77,8 +78,6 @@ pub fn search_book_from_all_sources(name: &String, cache: &Option<&mut Cache>) -
 }
 
 fn main() {
-    let mut cache = Cache::new(10_000);
-    
-    let items = search_book_from_all_sources(&"bios 2".to_string(), &Some(&mut cache)).unwrap();
-    println!("{:#?}", items);
+    #[cfg(feature = "tui")]
+    features::tui::start_tui();
 }

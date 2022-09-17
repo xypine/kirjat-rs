@@ -29,7 +29,7 @@ impl Sanomapro {
     }
 
     fn get_conditions(&self, url: &String, cache: &Option<&mut Cache>) -> Result<Vec<Condition>> {
-        println!("Fetching conditions from url {}...", url);
+        //println!("Fetching conditions from url {}...", url);
         let mut out = vec![];
 
         let html = crate::get_page_html(url, cache)?;
@@ -95,11 +95,11 @@ impl Scraper for Sanomapro {
         let mut out = vec![];
 
         let key = self.extract_key(document)?;
-        println!("Sanomapro key: {}", key);
+        //println!("Sanomapro key: {}", key);
 
         let new_url = format!("{}{}?term={}&fuzzy=auto&page=1&limit=3&sort=relevance&order=desc", SEARCH_API_URL_BASE, key, book_name);
-        println!("Url: {}", new_url);
-        println!("requesting page...");
+        //println!("Url: {}", new_url);
+        //println!("requesting page...");
         let html = crate::get_page_html(&new_url, cache)?;
         let data = crate::parse_json(&html)?;
 
@@ -124,26 +124,31 @@ impl Scraper for Sanomapro {
                                                 let serde_json::Value::Object(images) = images
                                             {
                                                 // Get prices
-                                                let conditions = self.get_conditions(url, cache)?;
+                                                let conditions = self.get_conditions(url, cache);
 
-                                                let mut image: Option<String> = None;
-                                                if images.len() > 0 {
-                                                    if let Some(imgval) = images.get("main") {
-                                                        if let serde_json::Value::String(url) = imgval {
-                                                            image = Some(url.to_string());
+                                                match conditions {
+                                                    Ok(conditions) => {
+                                                        let mut image: Option<String> = None;
+                                                        if images.len() > 0 {
+                                                            if let Some(imgval) = images.get("main") {
+                                                                if let serde_json::Value::String(url) = imgval {
+                                                                    image = Some(url.to_string());
+                                                                }
+                                                            }
                                                         }
-                                                    }
-                                                }
-                                                out.push(Kirja {
-                                                    name: title.to_string(),
-                                                    id: id.to_string(),
-                                                    links: Links {
-                                                        buy: url.to_string(),
-                                                        image
+                                                        out.push(Kirja {
+                                                            name: title.to_string(),
+                                                            id: id.to_string(),
+                                                            links: Links {
+                                                                buy: url.to_string(),
+                                                                image
+                                                            },
+                                                            source: self.get_store_url().to_string(),
+                                                            conditions
+                                                        })
                                                     },
-                                                    source: self.get_store_url().to_string(),
-                                                    conditions
-                                                })
+                                                    Err(err) => {},
+                                                }
                                             }
                                         }
                                     },
