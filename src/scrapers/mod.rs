@@ -1,21 +1,24 @@
 use crate::structs::kirja::Kirja;
 
 pub mod jamera;
+pub mod sanomapro;
 
 pub trait Scraper {
-    fn get_store_name() -> &'static str;
-    fn get_store_url() -> &'static str;
+    fn get_store_name(&self) -> &'static str;
+    fn get_store_url(&self) -> &'static str;
 
     fn get_page_url(&self, book_name: &String) -> String;
     fn parse_document(&self, document: scraper::Html) -> anyhow::Result<Vec<Kirja>>;
 }
 
 pub enum Scrapers {
-    Jamera
+    Jamera,
+    Sanomapro
 }
 
-pub fn get_instance(selection: Scrapers) -> impl Scraper {
+pub fn get_instance(selection: Scrapers) -> Box<dyn Scraper> {
     match selection {
-        Scrapers::Jamera => jamera::Jamera::new(),
+        Scrapers::Jamera => Box::new(jamera::Jamera::new()),
+        Scrapers::Sanomapro => Box::new(sanomapro::Sanomapro::new())
     }
 }

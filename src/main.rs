@@ -20,7 +20,7 @@ pub fn parse_html(raw: &str) -> scraper::Html {
 
 /// The main method you should be using
 pub fn search_book(name: String, selected_scraper: scrapers::Scrapers) -> Result<()> {
-    let scraper = scrapers::get_instance(scrapers::Scrapers::Jamera);
+    let scraper = scrapers::get_instance(selected_scraper);
 
     println!("Downloading page...");
     let url = scraper.get_page_url(&name);
@@ -37,7 +37,5 @@ pub fn search_book(name: String, selected_scraper: scrapers::Scrapers) -> Result
 }
 
 fn main() {
-    let e = structs::currency::Currency::from_euros_and_cents(200, 5);
-    println!("{}", e);
-    search_book("bios 2".to_string(), scrapers::Scrapers::Jamera).unwrap();
+    search_book("bios 2".to_string(), scrapers::Scrapers::Sanomapro).unwrap();
 }

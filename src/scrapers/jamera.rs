@@ -2,7 +2,7 @@ use scraper::{Selector, ElementRef};
 use anyhow::{Result, Context};
 
 use super::Scraper;
-use crate::{utils::collect_text, structs::{kirja::{Condition, Kirja, Links}, currency::Currency}};
+use crate::{structs::{kirja::{Condition, Kirja, Links}, currency::Currency}};
 
 pub struct Jamera {
 
@@ -18,11 +18,11 @@ impl Jamera {
 
 impl Scraper for Jamera {
 
-    fn get_store_name() -> &'static str {
+    fn get_store_name(&self) -> &'static str {
         "Jamera"
     }
 
-    fn get_store_url() -> &'static str {
+    fn get_store_url(&self) -> &'static str {
         "https://kauppa.jamera.net"
     }
 
@@ -66,7 +66,7 @@ impl Scraper for Jamera {
                 let id: usize = id_str.parse().context("Couldn't parse id")?;
                 let name = names[0].text().collect::<Vec<&str>>().join("");
 
-                println!("{}: {}", id, name);
+                //println!("{}: {}", id, name);
 
                 let mut conditions: Vec<Condition> = vec![];
                 let cname_selector = Selector::parse("p.name")
@@ -109,21 +109,21 @@ impl Scraper for Jamera {
                                         price,
                                         available: true
                                     });
-                                    print!("{}\t", price);
+                                    //print!("{}\t", price);
                                 }
                             }
                         }
                     }
                 }
-                println!("");
+                //println!("");
 
-                let source = Self::get_store_name().to_string();
+                let source = self.get_store_name().to_string();
                 let buy_link_href = names[0].value().attr("href").context("could not find store href")?;
-                let buy_link = format!("{}{}", Self::get_store_url(), buy_link_href);
+                let buy_link = format!("{}{}", self.get_store_url(), buy_link_href);
                 let image_link: Option<String>;
                 if let Some(image_element) = images.first() {
                     let href = image_element.value().attr("src").context("could not find image href")?;
-                    image_link = Some(format!("{}/{}", Self::get_store_url(), href));
+                    image_link = Some(format!("{}/{}", self.get_store_url(), href));
                 }
                 else {
                     image_link = None;
