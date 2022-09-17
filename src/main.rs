@@ -2,17 +2,27 @@ pub mod structs;
 pub mod scrapers;
 pub mod utils;
 
+use std::time::{Instant, Duration};
+
 use anyhow::{Result, Context};
 use moka::sync::Cache as GenericCache;
 use structs::kirja::Kirja;
 
-pub type Cache = GenericCache<String, String>;
+pub type Cache = GenericCache<String, (Instant, String)>;
+pub const MAX_CACHE_DURATION: Duration = Duration::from_secs(86_400); // 24 hours
 
 pub fn get_page_html(url: &String, cache: &Option<&mut Cache>) -> Result<String> {
     match cache {
         Some(cache) => {
             match cache.get(url) {
-                Some(data) => return Ok(data),
+                Some((time, data)) => {
+                    if time.elapsed() > MAX_CACHE_DURATION {
+                        cache.invalidate(url);
+                    }
+                    else {
+                        return Ok(data);
+                    }
+                },
                 None => {},
             }
         },
@@ -25,7 +35,7 @@ pub fn get_page_html(url: &String, cache: &Option<&mut Cache>) -> Result<String>
     let text = response.text()?;
 
     if let Some(cache) = cache {
-        cache.insert(url.to_string(), text.clone());
+        cache.insert(url.to_string(), (Instant::now(), text.clone()));
     }
 
     Ok(text)
@@ -41,7 +51,7 @@ pub fn parse_json(raw: &str) -> Result<serde_json::Value> {
 }
 
 /// The main method you should be using
-pub fn search_book(name: String, selected_scraper: scrapers::Scrapers, cache: Option<&mut Cache>) -> Result<Vec<Kirja>> {
+pub fn search_book(name: &String, selected_scraper: scrapers::Scrapers, cache: &Option<&mut Cache>) -> Result<Vec<Kirja>> {
     let scraper = scrapers::get_instance(selected_scraper);
 
     println!("Downloading page...");
@@ -52,14 +62,23 @@ pub fn search_book(name: String, selected_scraper: scrapers::Scrapers, cache: Op
     let document = parse_html(&html);
 
     println!("Extracting data...");
-    let items = scraper.parse_document(document, &name, &cache)?;
-
-    println!("{:#?}", items);
+    let items = scraper.parse_document(document, &name, cache)?;
     Ok(items)
+}
+
+pub fn search_book_from_all_sources(name: &String, cache: &Option<&mut Cache>) -> Result<Vec<Kirja>> {
+    let mut out = vec![];
+    for scraper in scrapers::AVAILABLE_SCRAPERS {
+        let mut items = search_book(name, scraper, cache)?;
+        out.append(&mut items);
+    }
+
+    Ok(out)
 }
 
 fn main() {
     let mut cache = Cache::new(10_000);
-    search_book("bios 2".to_string(), scrapers::Scrapers::Sanomapro, Some(&mut cache)).unwrap();
-    search_book("bios 2".to_string(), scrapers::Scrapers::Sanomapro, Some(&mut cache)).unwrap();
+    
+    let items = search_book_from_all_sources(&"bios 2".to_string(), &Some(&mut cache)).unwrap();
+    println!("{:#?}", items);
 }

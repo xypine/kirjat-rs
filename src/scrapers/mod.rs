@@ -16,6 +16,11 @@ pub enum Scrapers {
     Sanomapro
 }
 
+pub const AVAILABLE_SCRAPERS: [Scrapers; 2] = [
+    Scrapers::Jamera,
+    Scrapers::Sanomapro
+];
+
 pub fn get_instance(selection: Scrapers) -> Box<dyn Scraper> {
     match selection {
         Scrapers::Jamera => Box::new(jamera::Jamera::new()),
