@@ -24,7 +24,7 @@ pub fn start_tui() {
 
     let results = search_book_from_all_sources(&input, &None).unwrap();
 
-    let selectable = results.iter().map(|x| x.name.clone()).collect::<Vec<String>>();
+    let selectable = results.iter().map(|x| format!("{}: {}", x.source, x.name)).collect::<Vec<String>>();
     term.clear_screen().unwrap();
     let selection = Select::with_theme(&ColorfulTheme::default())
         .items(&selectable)

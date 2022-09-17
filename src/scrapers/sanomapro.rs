@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, Ok};
+use anyhow::{Context, Result};
 use scraper::{Selector, ElementRef};
 
 use crate::{structs::{kirja::{Kirja, Links, Condition}, currency::Currency}, Cache};
@@ -147,20 +147,20 @@ impl Scraper for Sanomapro {
                                                             conditions
                                                         })
                                                     },
-                                                    Err(err) => {},
+                                                    Err(_err) => {},
                                                 }
                                             }
                                         }
                                     },
-                                    _ => todo!()
+                                    _ => {}
                                 }
                             }
                         }
-                        _ => todo!(),
+                        _ => {},
                     }
                 }
             },
-            _ => todo!(),
+            _ => {},
         }
 
         Ok(out)
