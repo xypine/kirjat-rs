@@ -3,26 +3,39 @@ use dialoguer::{
     Select,
     theme::ColorfulTheme
 };
-use crate::search_book_from_all_sources;
+use crate::{search_book_from_all_sources, search_book};
 use console::Term;
 
 pub fn start_tui() {
     let term = Term::stdout();
     term.set_title("Kirjat-rs");
     term.clear_screen().unwrap();
-    println!("Kirjoita \"q\" poistuaksesi.");
+    term.write_line("Valitse lähde").unwrap();
+    let mut available_sources = vec!["Hae kaikista lähteistä samanaikaisesti".to_string()];
+    available_sources.append(
+        &mut crate::sources::AVAILABLE_SOURCES.iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>()
+    );
+    let source_index = Select::with_theme(&ColorfulTheme::default())
+        .items(&available_sources)
+        .default(0)
+        .interact_on_opt(&Term::stderr())
+        .unwrap()
+        .unwrap();
+    term.clear_screen().unwrap();
     let input: String = Input::new()
         .with_prompt("Kirjan nimi")
         .interact_text().unwrap();
-    if input == "q" {
-        term.clear_screen().unwrap();
-        term.write_line("Käyttäjä poistui.").unwrap();
-        return;
-    }
     term.clear_screen().unwrap();
     term.write_line("Haetaan...").unwrap();
 
-    let results = search_book_from_all_sources(&input, &None).unwrap();
+    let results: Vec<crate::structs::kirja::Kirja>;
+    if source_index == 0 {
+        results = search_book_from_all_sources(&input, &None).unwrap();
+    }
+    else {
+        let actual_index = source_index - 1; // Substract one as we added an option
+        results = search_book(&input, crate::sources::AVAILABLE_SOURCES[actual_index], &None).unwrap();
+    }
 
     let selectable = results.iter().map(|x| format!("{}: {}", x.source, x.name)).collect::<Vec<String>>();
     term.clear_screen().unwrap();

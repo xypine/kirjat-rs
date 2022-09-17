@@ -80,4 +80,6 @@ pub fn search_book_from_all_sources(name: &String, cache: &Option<&mut Cache>) -
 fn main() {
     #[cfg(feature = "tui")]
     features::tui::start_tui();
+    #[cfg(not(feature = "tui"))]
+    println!("The crate wasn't built with the \"tui\"-option, so no ui is available.");
 }
