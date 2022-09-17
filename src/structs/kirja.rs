@@ -16,12 +16,13 @@ pub struct Kirja {
 #[derive(Serialize, Deserialize)]
 pub struct Condition {
     pub name: String,
-    pub price: Currency
+    pub price: Currency,
+    pub available: bool
 }
 
 #[derive(Clone, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[derive(Serialize, Deserialize)]
 pub struct Links {
     pub buy: String,
-    pub image: String
+    pub image: Option<String>
 }

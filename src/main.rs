@@ -1,39 +1,14 @@
 pub mod structs;
 pub mod scrapers;
+pub mod utils;
 
 use anyhow::{Result, Context};
 
-const PAGE_URL: &str = "https://ksyk.fi";
-const LANG_SEPARATOR: &str = "*";
+use crate::scrapers::Scraper;
 
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MenuInfo {
-    pub title: String,
-    pub content: Vec<String>
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MenuDay {
-    pub name: String,
-    pub content: Vec<Vec<String>>
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Menu {
-    pub info: Option<MenuInfo>,
-    pub days: Vec<MenuDay>,
-}
-
-impl Menu {
-    pub fn new_empty() -> Self {
-        Self { info: None, days: vec![] }
-    }
-}
-
-pub fn get_page_html() -> Result<String> {
+pub fn get_page_html(url: &String) -> Result<String> {
     let response = reqwest::blocking::get(
-        PAGE_URL
+        url
     )?;
 
     response.text().context("Failed to get page text content")
@@ -43,52 +18,20 @@ pub fn parse_html(raw: &str) -> scraper::Html {
     scraper::Html::parse_document(raw)
 }
 
-pub fn extract_data(document: scraper::Html, extract_info: bool) -> Result<Menu> {
-    let tab_data_container_selector = scraper::Selector::parse("div.et_pb_module.et_pb_tabs").unwrap();
-    let tab_data_container = document.select(&tab_data_container_selector)
-        .next()
-        .context("could not find menu container")?;
-    
-    let menu_title_selector = scraper::Selector::parse(".et_pb_tabs_controls > *").unwrap();
-    let mut menu_titles: Vec<scraper::ElementRef> = tab_data_container.select(&menu_title_selector).collect();
-    
-    let menu_item_selector = scraper::Selector::parse("div.et_pb_tab_content").unwrap();
-    let mut menu_items: Vec<scraper::ElementRef> = tab_data_container.select(&menu_item_selector).collect();
-
-    let mut menu = Menu::new_empty();
-
-    if extract_info && menu_items.len() > 0 {
-        let info_title = menu_titles.remove(0);
-        let info_item = menu_items.remove(0);
-        menu.info = Some(MenuInfo {
-            title: collect_text(&info_title, 0, false, None)[0].join(""),
-            content: collect_text(&info_item, 0, false, None)[0].clone()
-        });
-    }
-    
-    let mut item_index = 0;
-    for menu_item in menu_items {
-        let day_name_element = menu_titles.get(item_index).unwrap();
-        let name = collect_text(day_name_element, 0, false, None)[0].join("");
-        let content = collect_text(&menu_item, 1, true, Some(LANG_SEPARATOR));
-        menu.days.push(MenuDay {
-            name,
-            content
-        });
-        item_index += 1;
-    }
-
-    Ok(menu)
-}
-
 /// The main method you should be using
-pub fn get_menu() -> Result<()> {
+pub fn search_book(name: String, selected_scraper: scrapers::Scrapers) -> Result<()> {
+    let scraper = scrapers::get_instance(scrapers::Scrapers::Jamera);
+
     println!("Downloading page...");
-    let html = get_page_html().context("Failed to get page html")?;
+    let url = scraper.get_page_url(&name);
+    let html = get_page_html(&url).context("Failed to get page html")?;
+
     println!("Parsing html...");
     let document = parse_html(&html);
+
     println!("Extracting data...");
-    let items = extract_data(document, true)?;
+    let items = scraper.parse_document(document)?;
+
     println!("{:#?}", items);
     Ok(())
 }
@@ -96,4 +39,5 @@ pub fn get_menu() -> Result<()> {
 fn main() {
     let e = structs::currency::Currency::from_euros_and_cents(200, 5);
     println!("{}", e);
+    search_book("bios 2".to_string(), scrapers::Scrapers::Jamera).unwrap();
 }
