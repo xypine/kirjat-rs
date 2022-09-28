@@ -1,25 +1,26 @@
-use scraper::{Selector, ElementRef};
-use anyhow::{Result, Context};
+use anyhow::Context;
+use scraper::{ElementRef, Selector};
 
 use super::Source;
-use crate::{structs::{kirja::{Condition, Kirja, Links}, currency::Currency}, Cache};
-
+use crate::{
+    structs::{
+        currency::Currency,
+        kirja::{Condition, Kirja, Links},
+        response::{Response, ResponseError},
+    },
+    Cache,
+};
 
 #[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Jamera {
-
-}
+pub struct Jamera {}
 
 impl Jamera {
     pub fn new() -> Self {
-        Self {
-
-        }
+        Self {}
     }
 }
 
 impl Source for Jamera {
-
     fn get_store_name(&self) -> &'static str {
         "Jamera"
     }
@@ -32,60 +33,74 @@ impl Source for Jamera {
         format!("https://kauppa.jamera.net/kauppa/haku/?q={}", book_name)
     }
 
-    fn parse_document(&self, document: scraper::Html, _book_name: &String, _cache: &Option<&mut Cache>) -> Result<Vec<crate::structs::kirja::Kirja>> {
+    fn parse_document(
+        &self,
+        document: scraper::Html,
+        _book_name: &String,
+        _cache: &Option<&mut Cache>,
+    ) -> Response {
         let mut out = vec![];
 
-        let table_selector = Selector::parse("table.tuotteet_flex")
-            .expect("Failed to construct selector");
+        let error_selector = Selector::parse("div.error").expect("Failed to construct selector");
+        if let Some(error_container) = document.select(&error_selector).next() {
+            let error_text = error_container.text().collect::<Vec<&str>>().join("");
+            return Response::Err(ResponseError::SourceError(error_text));
+        }
+
+        let table_selector =
+            Selector::parse("table.tuotteet_flex").expect("Failed to construct selector");
 
         let mut tables = document.select(&table_selector);
-        let table = tables.next().context("No elements found")?;
+        let table = tables
+            .next()
+            .context("Couldn't find product table")
+            .unwrap();
 
-        let product_selector = Selector::parse("tr.tuotteet")
-            .expect("Failed to construct selector");
-        let _bookseries_selector = Selector::parse("tr.kirjasarja")
-            .expect("Failed to construct selector");
-        
+        let product_selector =
+            Selector::parse("tr.tuotteet").expect("Failed to construct selector");
+        let _bookseries_selector =
+            Selector::parse("tr.kirjasarja").expect("Failed to construct selector");
+
         let products = table.select(&product_selector);
 
-        let name_selector = Selector::parse("a.otsikko")
-            .expect("Failed to construct selector");
-        let id_selector = Selector::parse("a[name]")
-                .expect("Failed to construct selector");
-        let image_selector = Selector::parse("img.tuote_kuva")
-            .expect("Failed to construct selector");
-        let condition_selector = Selector::parse("td.radio")
-            .expect("Failed to construct selector");
-        
+        let name_selector = Selector::parse("a.otsikko").expect("Failed to construct selector");
+        let id_selector = Selector::parse("a[name]").expect("Failed to construct selector");
+        let image_selector =
+            Selector::parse("img.tuote_kuva").expect("Failed to construct selector");
+        let condition_selector = Selector::parse("td.radio").expect("Failed to construct selector");
+
         for product in products {
             let ids: Vec<ElementRef> = product.select(&id_selector).collect();
             let names: Vec<ElementRef> = product.select(&name_selector).collect();
             let images: Vec<ElementRef> = product.select(&image_selector).collect();
-            let condition_containers: Vec<ElementRef> = product.select(&condition_selector).collect();
-            
+            let condition_containers: Vec<ElementRef> =
+                product.select(&condition_selector).collect();
+
             if ids.len() > 0 && names.len() > 0 {
-                let id = ids[0].value().attr("name").context("Couldn't find expected id")?.to_string();
+                let id = ids[0]
+                    .value()
+                    .attr("name")
+                    .context("Couldn't find expected id")?
+                    .to_string();
                 let name = names[0].text().collect::<Vec<&str>>().join("");
 
                 //println!("{}: {}", id, name);
 
                 let mut conditions: Vec<Condition> = vec![];
-                let cname_selector = Selector::parse("p.name")
-                    .expect("Failed to construct selector");
-                let ccolor_selector = Selector::parse("p.vari")
-                    .expect("Failed to construct selector");
-                let price_selector = Selector::parse("span")
-                    .expect("Failed to construct selector");
+                let cname_selector =
+                    Selector::parse("p.name").expect("Failed to construct selector");
+                let ccolor_selector =
+                    Selector::parse("p.vari").expect("Failed to construct selector");
+                let price_selector = Selector::parse("span").expect("Failed to construct selector");
                 for condition_container in condition_containers {
                     let name_opt = condition_container.select(&cname_selector).next();
                     if let Some(name) = name_opt {
                         let mut color = condition_container.select(&ccolor_selector);
-                        
+
                         let name_to_use: String;
                         if let Some(colorname) = color.next() {
                             name_to_use = colorname.text().collect::<Vec<&str>>().join("");
-                        }
-                        else {
+                        } else {
                             name_to_use = name.text().collect::<Vec<&str>>().join("");
                         }
 
@@ -100,15 +115,15 @@ impl Source for Jamera {
                                 cleaned_price = cleaned_price.trim().to_string();
                                 let split: Vec<&str> = cleaned_price.split(",").collect();
                                 if split.len() > 1 {
-                                    let euros: isize = split[0].parse()
-                                        .context("failed to parse price (e)")?;
-                                    let cents: isize = split[1].parse()
-                                        .context("failed to parse price (c)")?;
+                                    let euros: isize =
+                                        split[0].parse().context("failed to parse price (e)")?;
+                                    let cents: isize =
+                                        split[1].parse().context("failed to parse price (c)")?;
                                     let price = Currency::from_euros_and_cents(euros, cents);
                                     conditions.push(Condition {
                                         name: name_to_use,
                                         price,
-                                        available: true
+                                        available: true,
                                     });
                                     //print!("{}\t", price);
                                 }
@@ -119,26 +134,31 @@ impl Source for Jamera {
                 //println!("");
 
                 let source = self.get_store_url().to_string();
-                let buy_link_href = names[0].value().attr("href").context("could not find store href")?;
+                let buy_link_href = names[0]
+                    .value()
+                    .attr("href")
+                    .context("could not find store href")?;
                 let buy_link = format!("{}{}", self.get_store_url(), buy_link_href);
                 let image_link: Option<String>;
                 if let Some(image_element) = images.first() {
-                    let href = image_element.value().attr("src").context("could not find image href")?;
+                    let href = image_element
+                        .value()
+                        .attr("src")
+                        .context("could not find image href")?;
                     image_link = Some(format!("{}/{}", self.get_store_url(), href));
-                }
-                else {
+                } else {
                     image_link = None;
                 }
                 let links = Links {
                     buy: buy_link,
-                    image: image_link
+                    image: image_link,
                 };
                 out.push(Kirja {
                     id,
                     name,
                     conditions,
                     source,
-                    links
+                    links,
                 })
             }
         }

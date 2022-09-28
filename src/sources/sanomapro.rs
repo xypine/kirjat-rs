@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use scraper::{Selector, ElementRef};
 
-use crate::{structs::{kirja::{Kirja, Links, Condition}, currency::Currency}, Cache};
+use crate::{structs::{kirja::{Kirja, Links, Condition}, currency::Currency, response::Response}, Cache};
 
 use super::Source;
 
@@ -91,7 +91,7 @@ impl Source for Sanomapro {
         format!("https://www.sanomapro.fi/haku/?q={}", book_name)
     }
 
-    fn parse_document(&self, document: scraper::Html, book_name: &String, cache: &Option<&mut Cache>) -> anyhow::Result<Vec<crate::structs::kirja::Kirja>> {
+    fn parse_document(&self, document: scraper::Html, book_name: &String, cache: &Option<&mut Cache>) -> Response {
         let mut out = vec![];
 
         let key = self.extract_key(document)?;

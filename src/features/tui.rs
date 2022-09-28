@@ -1,10 +1,8 @@
-use dialoguer::Input;
-use dialoguer::{
-    Select,
-    theme::ColorfulTheme
-};
-use crate::{search_book_from_all_sources, search_book};
+use crate::{search_book, search_book_from_all_sources};
+use anyhow::Context;
 use console::Term;
+use dialoguer::Input;
+use dialoguer::{theme::ColorfulTheme, Select};
 
 pub fn start_tui() {
     let term = Term::stdout();
@@ -13,7 +11,10 @@ pub fn start_tui() {
     term.write_line("Valitse lähde").unwrap();
     let mut available_sources = vec!["Hae kaikista lähteistä samanaikaisesti".to_string()];
     available_sources.append(
-        &mut crate::sources::AVAILABLE_SOURCES.iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>()
+        &mut crate::sources::AVAILABLE_SOURCES
+            .iter()
+            .map(|x| format!("{:?}", x))
+            .collect::<Vec<String>>(),
     );
     let source_index = Select::with_theme(&ColorfulTheme::default())
         .items(&available_sources)
@@ -24,20 +25,36 @@ pub fn start_tui() {
     term.clear_screen().unwrap();
     let input: String = Input::new()
         .with_prompt("Kirjan nimi")
-        .interact_text().unwrap();
+        .interact_text()
+        .unwrap();
     term.clear_screen().unwrap();
     term.write_line("Haetaan...").unwrap();
 
     let results: Vec<crate::structs::kirja::Kirja>;
     if source_index == 0 {
-        results = search_book_from_all_sources(&input, &None).unwrap();
-    }
-    else {
+        results = search_book_from_all_sources(&input, &None)
+            .context("Kirjojen haku epäonnistui")
+            .unwrap();
+    } else {
         let actual_index = source_index - 1; // Substract one as we added an option
-        results = search_book(&input, crate::sources::AVAILABLE_SOURCES[actual_index], &None).unwrap();
+        results = search_book(
+            &input,
+            crate::sources::AVAILABLE_SOURCES[actual_index],
+            &None,
+        )
+        .context("Kirjojen haku epäonnistui")
+        .unwrap();
     }
 
-    let selectable = results.iter().map(|x| format!("{}: {}", x.source, x.name)).collect::<Vec<String>>();
+    if results.len() == 0 {
+        term.write_line("Hakusanalla ei löytynyt kirjoja").unwrap();
+        return;
+    }
+
+    let selectable = results
+        .iter()
+        .map(|x| format!("{}\t{}\t\t{}", x.get_min_price().unwrap(), x.source, x.name))
+        .collect::<Vec<String>>();
     term.clear_screen().unwrap();
     let selection = Select::with_theme(&ColorfulTheme::default())
         .items(&selectable)
@@ -54,10 +71,9 @@ pub fn start_tui() {
             for condition in &selected_item.conditions {
                 println!("\t{}: {}", condition.name, condition.price);
             }
-        },
+        }
         None => {
             term.write_line("Yhtäkään kirjaa ei valittu.").unwrap();
-        },
+        }
     }
-    
 }

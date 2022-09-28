@@ -1,34 +1,35 @@
-use crate::{structs::kirja::Kirja, Cache};
+use crate::{structs::response::Response, Cache};
 
 pub mod jamera;
-pub mod sanomapro;
 pub mod otava;
+pub mod sanomapro;
 
 pub trait Source {
     fn get_store_name(&self) -> &'static str;
     fn get_store_url(&self) -> &'static str;
 
     fn get_page_url(&self, book_name: &String) -> String;
-    fn parse_document(&self, document: scraper::Html, book_name: &String, cache: &Option<&mut Cache>) -> anyhow::Result<Vec<Kirja>>;
+    fn parse_document(
+        &self,
+        document: scraper::Html,
+        book_name: &String,
+        cache: &Option<&mut Cache>,
+    ) -> Response;
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum Sources {
     Jamera,
     Sanomapro,
-    Otava
+    Otava,
 }
 
-pub const AVAILABLE_SOURCES: [Sources; 3] = [
-    Sources::Jamera,
-    Sources::Sanomapro,
-    Sources::Otava
-];
+pub const AVAILABLE_SOURCES: [Sources; 3] = [Sources::Jamera, Sources::Sanomapro, Sources::Otava];
 
 pub fn get_instance(selection: Sources) -> Box<dyn Source> {
     match selection {
         Sources::Jamera => Box::new(jamera::Jamera::new()),
         Sources::Sanomapro => Box::new(sanomapro::Sanomapro::new()),
-        Sources::Otava => Box::new(otava::Otava::new())
+        Sources::Otava => Box::new(otava::Otava::new()),
     }
 }

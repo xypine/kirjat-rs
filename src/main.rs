@@ -1,11 +1,11 @@
-pub mod structs;
-pub mod sources;
-pub mod utils;
 pub mod features;
+pub mod sources;
+pub mod structs;
+pub mod utils;
 
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use moka::sync::Cache as GenericCache;
 use structs::kirja::Kirja;
 
@@ -14,24 +14,19 @@ pub const MAX_CACHE_DURATION: Duration = Duration::from_secs(86_400); // 24 hour
 
 pub fn get_page_html(url: &String, cache: &Option<&mut Cache>) -> Result<String> {
     match cache {
-        Some(cache) => {
-            match cache.get(url) {
-                Some((time, data)) => {
-                    if time.elapsed() > MAX_CACHE_DURATION {
-                        cache.invalidate(url);
-                    }
-                    else {
-                        return Ok(data);
-                    }
-                },
-                None => {},
+        Some(cache) => match cache.get(url) {
+            Some((time, data)) => {
+                if time.elapsed() > MAX_CACHE_DURATION {
+                    cache.invalidate(url);
+                } else {
+                    return Ok(data);
+                }
             }
+            None => {}
         },
-        None => {},
+        None => {}
     }
-    let response = reqwest::blocking::get(
-        url
-    )?;
+    let response = reqwest::blocking::get(url)?;
 
     let text = response.text()?;
 
@@ -52,7 +47,11 @@ pub fn parse_json(raw: &str) -> Result<serde_json::Value> {
 }
 
 /// The main method you should be using
-pub fn search_book(name: &String, selected_scraper: sources::Sources, cache: &Option<&mut Cache>) -> Result<Vec<Kirja>> {
+pub fn search_book(
+    name: &String,
+    selected_scraper: sources::Sources,
+    cache: &Option<&mut Cache>,
+) -> Result<Vec<Kirja>> {
     let scraper = sources::get_instance(selected_scraper);
 
     // println!("Downloading page...");
@@ -67,7 +66,10 @@ pub fn search_book(name: &String, selected_scraper: sources::Sources, cache: &Op
     Ok(items)
 }
 
-pub fn search_book_from_all_sources(name: &String, cache: &Option<&mut Cache>) -> Result<Vec<Kirja>> {
+pub fn search_book_from_all_sources(
+    name: &String,
+    cache: &Option<&mut Cache>,
+) -> Result<Vec<Kirja>> {
     let mut out = vec![];
     for scraper in sources::AVAILABLE_SOURCES {
         let mut items = search_book(name, scraper, cache)?;
