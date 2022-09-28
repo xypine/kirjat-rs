@@ -1,15 +1,18 @@
+use async_trait::async_trait;
+
 use crate::{structs::response::Response, Cache};
 
 pub mod jamera;
 pub mod otava;
 pub mod sanomapro;
 
+#[async_trait(?Send)]
 pub trait Source {
     fn get_store_name(&self) -> &'static str;
     fn get_store_url(&self) -> &'static str;
 
-    fn get_page_url(&self, book_name: &String) -> String;
-    fn parse_document(
+    async fn get_page_url(&self, book_name: &String) -> String;
+    async fn parse_document(
         &self,
         document: scraper::Html,
         book_name: &String,

@@ -1,4 +1,5 @@
 use anyhow::Context;
+use async_trait::async_trait;
 use scraper::{ElementRef, Selector};
 
 use super::Source;
@@ -20,6 +21,7 @@ impl Jamera {
     }
 }
 
+#[async_trait(?Send)]
 impl Source for Jamera {
     fn get_store_name(&self) -> &'static str {
         "Jamera"
@@ -29,11 +31,11 @@ impl Source for Jamera {
         "https://kauppa.jamera.net"
     }
 
-    fn get_page_url(&self, book_name: &String) -> String {
+    async fn get_page_url(&self, book_name: &String) -> String {
         format!("https://kauppa.jamera.net/kauppa/haku/?q={}", book_name)
     }
 
-    fn parse_document(
+    async fn parse_document(
         &self,
         document: scraper::Html,
         _book_name: &String,

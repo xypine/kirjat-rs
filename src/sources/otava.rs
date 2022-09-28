@@ -1,4 +1,5 @@
 use anyhow::Context;
+use async_trait::async_trait;
 use scraper::{ElementRef, Selector};
 
 use super::Source;
@@ -20,6 +21,7 @@ impl Otava {
     }
 }
 
+#[async_trait(?Send)]
 impl Source for Otava {
     fn get_store_name(&self) -> &'static str {
         "Otava"
@@ -29,14 +31,14 @@ impl Source for Otava {
         "https://otava.kauppakv.fi"
     }
 
-    fn get_page_url(&self, book_name: &String) -> String {
+    async fn get_page_url(&self, book_name: &String) -> String {
         format!(
             "https://otava.kauppakv.fi/sivu/tuotehaku/?action=search&search={}&sortmode=score",
             book_name
         )
     }
 
-    fn parse_document(
+    async fn parse_document(
         &self,
         document: scraper::Html,
         _book_name: &String,

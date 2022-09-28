@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use async_trait::async_trait;
 use scraper::{Selector, ElementRef};
 
 use crate::{structs::{kirja::{Kirja, Links, Condition}, currency::Currency, response::Response}, Cache};
@@ -28,11 +29,11 @@ impl Sanomapro {
         Ok(key.to_string())
     }
 
-    fn get_conditions(&self, url: &String, cache: &Option<&mut Cache>) -> Result<Vec<Condition>> {
+    async fn get_conditions(&self, url: &String, cache: &Option<&mut Cache>) -> Result<Vec<Condition>> {
         //println!("Fetching conditions from url {}...", url);
         let mut out = vec![];
 
-        let html = crate::get_page_html(url, cache)?;
+        let html = crate::get_page_html(url, cache).await?;
         let document = crate::parse_html(&html);
 
         let options_selector = Selector::parse(".nested.options-list")
@@ -78,6 +79,7 @@ impl Sanomapro {
     }
 }
 
+#[async_trait(?Send)]
 impl Source for Sanomapro {
     fn get_store_name(&self) -> &'static str {
         "Sanomapro"
@@ -87,11 +89,11 @@ impl Source for Sanomapro {
         "https://tuotteet.sanomapro.fi/"
     }
 
-    fn get_page_url(&self, book_name: &String) -> String {
+    async fn get_page_url(&self, book_name: &String) -> String {
         format!("https://www.sanomapro.fi/haku/?q={}", book_name)
     }
 
-    fn parse_document(&self, document: scraper::Html, book_name: &String, cache: &Option<&mut Cache>) -> Response {
+    async fn parse_document(&self, document: scraper::Html, book_name: &String, cache: &Option<&mut Cache>) -> Response {
         let mut out = vec![];
 
         let key = self.extract_key(document)?;
@@ -100,7 +102,7 @@ impl Source for Sanomapro {
         let new_url = format!("{}{}?term={}&fuzzy=auto&page=1&limit=3&sort=relevance&order=desc", SEARCH_API_URL_BASE, key, book_name);
         //println!("Url: {}", new_url);
         //println!("requesting page...");
-        let html = crate::get_page_html(&new_url, cache)?;
+        let html = crate::get_page_html(&new_url, cache).await?;
         let data = crate::parse_json(&html)?;
 
         match data {
@@ -124,7 +126,7 @@ impl Source for Sanomapro {
                                                 let serde_json::Value::Object(images) = images
                                             {
                                                 // Get prices
-                                                let conditions = self.get_conditions(url, cache);
+                                                let conditions = self.get_conditions(url, cache).await;
 
                                                 match conditions {
                                                     Ok(conditions) => {

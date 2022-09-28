@@ -4,7 +4,7 @@ use console::Term;
 use dialoguer::Input;
 use dialoguer::{theme::ColorfulTheme, Select};
 
-pub fn start_tui() {
+pub async fn start_tui() {
     let term = Term::stdout();
     term.set_title("Kirjat-rs");
     term.clear_screen().unwrap();
@@ -33,6 +33,7 @@ pub fn start_tui() {
     let results: Vec<crate::structs::kirja::Kirja>;
     if source_index == 0 {
         results = search_book_from_all_sources(&input, &None)
+            .await
             .context("Kirjojen haku epäonnistui")
             .unwrap();
     } else {
@@ -42,6 +43,7 @@ pub fn start_tui() {
             crate::sources::AVAILABLE_SOURCES[actual_index],
             &None,
         )
+        .await
         .context("Kirjojen haku epäonnistui")
         .unwrap();
     }
