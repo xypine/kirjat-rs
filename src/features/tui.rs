@@ -53,9 +53,17 @@ pub fn start_tui() {
 
     let selectable = results
         .iter()
-        .map(|x| format!("{}\t{}\t\t{}", x.get_min_price().unwrap(), x.source, x.name))
+        .map(|x| {
+            format!(
+                "{: ^4}\t{: ^30}\t{}",
+                x.get_min_price().unwrap(),
+                x.source.replace("https://", "").trim_end_matches("/"),
+                x.name
+            )
+        })
         .collect::<Vec<String>>();
     term.clear_screen().unwrap();
+    term.write_line("Valitse hakutulos").unwrap();
     let selection = Select::with_theme(&ColorfulTheme::default())
         .items(&selectable)
         .default(0)
