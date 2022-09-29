@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 pub mod features;
 pub mod sources;
 pub mod structs;
