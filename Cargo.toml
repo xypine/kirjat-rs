@@ -1,5 +1,6 @@
 [package]
 name = "kirjat-rs"
+description = "provides prices for finnish textbooks from multiple stores"
 version = "0.2.0"
 edition = "2021"
 license = "MIT"
