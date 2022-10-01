@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
 use crate::{structs::response::Response, Cache};
 
@@ -20,7 +21,7 @@ pub trait Source {
     ) -> Response;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Sources {
     Jamera,
     Sanomapro,
