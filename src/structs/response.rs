@@ -5,11 +5,11 @@ use thiserror::Error;
 pub enum ResponseError {
     #[error("network error: {0}")]
     NetworkError(String),
-    #[error("source returned an error: {0}")]
-    SourceError(String),
+    #[error("{0} palautti virheen: {1}")]
+    SourceError(String, String),
     #[error("parser error")]
     ParserError(#[from] anyhow::Error),
-    #[error("unknown error: {0}")]
+    #[error("tuntematon virhe: {0}")]
     UnknownError(String),
 }
 

@@ -46,7 +46,10 @@ impl Source for Jamera {
         let error_selector = Selector::parse("div.error").expect("Failed to construct selector");
         if let Some(error_container) = document.select(&error_selector).next() {
             let error_text = error_container.text().collect::<Vec<&str>>().join("");
-            return Response::Err(ResponseError::SourceError(error_text));
+            return Response::Err(ResponseError::SourceError(
+                self.get_store_name().to_string(),
+                error_text,
+            ));
         }
 
         let table_selector =

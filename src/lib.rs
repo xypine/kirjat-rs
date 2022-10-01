@@ -7,7 +7,7 @@ pub mod utils;
 use anyhow::{Context, Result};
 use moka::sync::Cache as GenericCache;
 use std::time::{Duration, Instant};
-use structs::kirja::Kirja;
+use structs::response::{Response, ResponseError};
 
 pub type Cache = GenericCache<String, (Instant, String)>;
 pub const MAX_CACHE_DURATION: Duration = Duration::from_secs(86_400); // 24 hours
@@ -51,27 +51,32 @@ pub async fn search_book(
     name: &String,
     selected_scraper: sources::Sources,
     cache: &Option<&mut Cache>,
-) -> Result<Vec<Kirja>> {
+) -> Response {
     let scraper = sources::get_instance(selected_scraper);
 
     // println!("Downloading page...");
     let url = scraper.get_page_url(&name).await;
-    let html = get_page_html(&url, &cache)
-        .await
-        .context("Failed to get page html")?;
+    let html_result = get_page_html(&url, &cache).await;
 
-    // println!("Parsing html...");
-    let document = parse_html(&html);
+    match html_result {
+        Ok(html) => {
+            // println!("Parsing html...");
+            let document = parse_html(&html);
 
-    // println!("Extracting data...");
-    let items = scraper.parse_document(document, &name, cache).await?;
-    Ok(items)
+            // println!("Extracting data...");
+            let items_result = scraper.parse_document(document, &name, cache).await;
+            match items_result {
+                Ok(items) => Ok(items),
+                Err(error) => Err(error),
+            }
+        }
+        Err(error) => {
+            return Err(ResponseError::NetworkError(error.to_string()));
+        }
+    }
 }
 
-pub async fn search_book_from_all_sources(
-    name: &String,
-    cache: &Option<&mut Cache>,
-) -> Result<Vec<Kirja>> {
+pub async fn search_book_from_all_sources(name: &String, cache: &Option<&mut Cache>) -> Response {
     let mut out = vec![];
     for scraper in sources::AVAILABLE_SOURCES {
         let mut items = search_book(name, scraper, cache).await?;
