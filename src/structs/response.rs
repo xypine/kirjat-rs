@@ -1,3 +1,5 @@
+//! Errors
+
 use super::kirja::Kirja;
 use thiserror::Error;
 

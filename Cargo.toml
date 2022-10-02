@@ -1,9 +1,11 @@
 [package]
 name = "kirjat-rs"
 description = "provides prices for finnish textbooks from multiple stores"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 license = "MIT"
+repository = "https://github.com/xypine/kirjat-rs"
+documentation = "https://docs.rs/kirjat-rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,5 +32,5 @@ async-trait = "0.1.57"
 tokio = { version = "1.21.2", optional = true, features = ["full"] }
 
 [features]
-default = ["tui"]
+default = []
 tui = ["dialoguer", "console", "tokio"]

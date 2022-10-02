@@ -2,7 +2,7 @@
 pub mod features;
 pub mod sources;
 pub mod structs;
-pub mod utils;
+//pub mod utils;
 
 use anyhow::{Context, Result};
 use moka::sync::Cache as GenericCache;
@@ -10,8 +10,11 @@ use std::time::{Duration, Instant};
 use structs::response::{Response, ResponseError};
 
 pub type Cache = GenericCache<String, (Instant, String)>;
+
+/// How long pages are cached
 pub const MAX_CACHE_DURATION: Duration = Duration::from_secs(86_400); // 24 hours
 
+/// Download a page and cache it, or return it from cache
 pub async fn get_page_html(url: &String, cache: &Option<&mut Cache>) -> Result<String> {
     match cache {
         Some(cache) => match cache.get(url) {
@@ -37,16 +40,18 @@ pub async fn get_page_html(url: &String, cache: &Option<&mut Cache>) -> Result<S
     Ok(text)
 }
 
+/// Parse string containing html
 pub fn parse_html(raw: &str) -> scraper::Html {
     scraper::Html::parse_document(raw)
 }
 
+/// Parse string containing json
 pub fn parse_json(raw: &str) -> Result<serde_json::Value> {
     let a = serde_json::from_str(raw).context("")?;
     return Ok(a);
 }
 
-/// The main method you should be using
+/// Search a book from a specific source
 pub async fn search_book(
     name: &String,
     selected_scraper: sources::Sources,
@@ -76,6 +81,7 @@ pub async fn search_book(
     }
 }
 
+/// Search a book from all sources included in the library
 pub async fn search_book_from_all_sources(name: &String, cache: &Option<&mut Cache>) -> Response {
     let mut out = vec![];
     for scraper in sources::AVAILABLE_SOURCES {

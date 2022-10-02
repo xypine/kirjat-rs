@@ -1,3 +1,5 @@
+//! Sources for book information
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -7,6 +9,8 @@ pub mod jamera;
 pub mod otava;
 pub mod sanomapro;
 
+/// A shared trait for all sources, async_trait is required for async functions.
+/// This library ships with a few sources, but you can implement your own as well.
 #[async_trait(?Send)]
 pub trait Source {
     fn get_store_name(&self) -> &'static str;
@@ -21,15 +25,16 @@ pub trait Source {
     ) -> Response;
 }
 
+/// All included sources
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Sources {
     Jamera,
     Sanomapro,
     Otava,
 }
-
 pub const AVAILABLE_SOURCES: [Sources; 3] = [Sources::Jamera, Sources::Sanomapro, Sources::Otava];
 
+/// Get an instance of a source enum
 pub fn get_instance(selection: Sources) -> Box<dyn Source> {
     match selection {
         Sources::Jamera => Box::new(jamera::Jamera::new()),

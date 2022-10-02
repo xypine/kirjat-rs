@@ -9,5 +9,5 @@ async fn main() {
 
 #[cfg(not(feature = "tui"))]
 fn main() {
-    panic!("The crate wasn't built with the \"tui\"-option, so no ui is available.");
+    panic!("The crate wasn't built with the \"tui\"-feature, so no ui is available.");
 }

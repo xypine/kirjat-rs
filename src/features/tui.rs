@@ -1,3 +1,6 @@
+//! A simple terminal interface, only in Finnish for now.
+//! You must enable the "tui"-feature in order to use this module.
+
 use crate::{search_book, search_book_from_all_sources};
 use anyhow::Context;
 use console::Term;

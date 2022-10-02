@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Clone, Copy, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[derive(Serialize, Deserialize)]
 pub struct Currency {
+    /// Currency is tracked in euro cents, use the methods to_euros and to_euros_and_cents if you want it in another form.
     pub euro_cents: isize
 }
 

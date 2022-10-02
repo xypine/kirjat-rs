@@ -1,7 +1,9 @@
+//! Structs relating to scraped books
 use serde::{Deserialize, Serialize};
 
 use super::currency::Currency;
 
+/// A universal representation for scraped books
 #[derive(Clone, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Kirja {
     pub id: String,
@@ -12,6 +14,7 @@ pub struct Kirja {
 }
 
 impl Kirja {
+    /// Returns the lowest price of all available conditions
     pub fn get_min_price(&self) -> Option<Currency> {
         let mut conditions = self.conditions.clone();
 
@@ -22,6 +25,9 @@ impl Kirja {
     }
 }
 
+
+/// Represents the conditions (used or not, etc) and prices for a given book.
+/// available might not be implemented for sources, returning true always.
 #[derive(Clone, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Condition {
     pub name: String,
