@@ -80,6 +80,7 @@ pub async fn start_tui() {
             println!("Kirja {}", selected_item.id);
             println!("- nimi: {}", selected_item.name);
             println!("- linkki: {}", selected_item.links.buy);
+            println!("- kuva: {:?}", selected_item.links.image);
             println!("- Vaihtoehdot:");
             for condition in &selected_item.conditions {
                 println!("\t{}: {}", condition.name, condition.price);

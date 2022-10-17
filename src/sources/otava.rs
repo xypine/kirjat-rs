@@ -119,9 +119,9 @@ impl Source for Otava {
                 if let Some(image_element) = images.first() {
                     let href = image_element
                         .value()
-                        .attr("src")
+                        .attr("data-src")
                         .context("could not find image href")?;
-                    image_link = Some(format!("{}/{}", self.get_store_url(), href));
+                    image_link = Some(href.to_string());
                 } else {
                     image_link = None;
                 }
