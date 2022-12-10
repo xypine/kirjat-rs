@@ -4,7 +4,7 @@ use scraper::{Selector, ElementRef};
 
 use crate::{structs::{kirja::{Kirja, Links, Condition}, currency::Currency, response::Response}, Cache};
 
-use super::Source;
+use super::{Source, RequestDetails};
 
 const SEARCH_API_URL_BASE: &str = "https://api.addsearch.com/v1/search/";
 
@@ -33,7 +33,7 @@ impl Sanomapro {
         //println!("Fetching conditions from url {}...", url);
         let mut out = vec![];
 
-        let html = crate::get_page_html(url, cache).await?;
+        let html = crate::get_page_plaintext(url, None, cache).await?;
         let document = crate::parse_html(&html);
 
         let options_selector = Selector::parse(".nested.options-list")
@@ -89,11 +89,13 @@ impl Source for Sanomapro {
         "https://tuotteet.sanomapro.fi/"
     }
 
-    async fn get_page_url(&self, book_name: &String) -> String {
-        format!("https://www.sanomapro.fi/haku/?q={}", book_name)
+    async fn get_request_details(&self, book_name: &String) -> RequestDetails {
+        let url = format!("https://www.sanomapro.fi/haku/?q={}", book_name);
+        RequestDetails { url, headers: None }
     }
 
-    async fn parse_document(&self, document: scraper::Html, book_name: &String, cache: &Option<&mut Cache>) -> Response {
+    async fn parse_document(&self, plaintext: String, book_name: &String, cache: &Option<&mut Cache>) -> Response {
+        let document = crate::parse_html(&plaintext);
         let mut out = vec![];
 
         let key = self.extract_key(document)?;
@@ -102,7 +104,7 @@ impl Source for Sanomapro {
         let new_url = format!("{}{}?term={}&fuzzy=auto&page=1&limit=3&sort=relevance&order=desc", SEARCH_API_URL_BASE, key, book_name);
         //println!("Url: {}", new_url);
         //println!("requesting page...");
-        let html = crate::get_page_html(&new_url, cache).await?;
+        let html = crate::get_page_plaintext(&new_url, None, cache).await?;
         let data = crate::parse_json(&html)?;
 
         match data {

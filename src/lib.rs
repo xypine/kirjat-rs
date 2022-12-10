@@ -6,35 +6,38 @@ pub mod structs;
 
 use anyhow::{Context, Result};
 use moka::sync::Cache as GenericCache;
-use std::time::{Duration, Instant};
+use reqwest::header::HeaderMap;
+use sources::RequestDetails;
 use structs::response::{Response, ResponseError};
 
-pub type Cache = GenericCache<String, (Instant, String)>;
-
-/// How long pages are cached
-pub const MAX_CACHE_DURATION: Duration = Duration::from_secs(86_400); // 24 hours
+pub type Cache = GenericCache<String, String>;
 
 /// Download a page and cache it, or return it from cache
-pub async fn get_page_html(url: &String, cache: &Option<&mut Cache>) -> Result<String> {
+pub async fn get_page_plaintext(
+    url: &String,
+    headers: Option<HeaderMap>,
+    cache: &Option<&mut Cache>,
+) -> Result<String> {
     match cache {
         Some(cache) => match cache.get(url) {
-            Some((time, data)) => {
-                if time.elapsed() > MAX_CACHE_DURATION {
-                    cache.invalidate(url);
-                } else {
-                    return Ok(data);
-                }
+            Some(data) => {
+                return Ok(data);
             }
             None => {}
         },
         None => {}
     }
-    let response = reqwest::get(url).await?;
+    let client = reqwest::Client::new();
+    let mut request = client.get(url);
+    if let Some(headers) = headers {
+        request = request.headers(headers);
+    }
+    let response = request.send().await?;
 
     let text = response.text().await?;
 
     if let Some(cache) = cache {
-        cache.insert(url.to_string(), (Instant::now(), text.clone()));
+        cache.insert(url.to_string(), text.clone());
     }
 
     Ok(text)
@@ -60,16 +63,12 @@ pub async fn search_book(
     let scraper = sources::get_instance(selected_scraper);
 
     // println!("Downloading page...");
-    let url = scraper.get_page_url(&name).await;
-    let html_result = get_page_html(&url, &cache).await;
+    let RequestDetails { url, headers } = scraper.get_request_details(&name).await;
+    let raw_result = get_page_plaintext(&url, headers, &cache).await;
 
-    match html_result {
-        Ok(html) => {
-            // println!("Parsing html...");
-            let document = parse_html(&html);
-
-            // println!("Extracting data...");
-            let items_result = scraper.parse_document(document, &name, cache).await;
+    match raw_result {
+        Ok(plaintext) => {
+            let items_result = scraper.parse_document(plaintext, &name, cache).await;
             match items_result {
                 Ok(items) => Ok(items),
                 Err(error) => Err(error),

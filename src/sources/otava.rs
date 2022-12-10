@@ -2,7 +2,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use scraper::{ElementRef, Selector};
 
-use super::Source;
+use super::{RequestDetails, Source};
 use crate::{
     structs::{
         currency::Currency,
@@ -31,19 +31,21 @@ impl Source for Otava {
         "https://otava.kauppakv.fi"
     }
 
-    async fn get_page_url(&self, book_name: &String) -> String {
-        format!(
+    async fn get_request_details(&self, book_name: &String) -> RequestDetails {
+        let url = format!(
             "https://otava.kauppakv.fi/sivu/tuotehaku/?action=search&search={}&sortmode=score",
             book_name
-        )
+        );
+        RequestDetails { url, headers: None }
     }
 
     async fn parse_document(
         &self,
-        document: scraper::Html,
+        plaintext: String,
         _book_name: &String,
         _cache: &Option<&mut Cache>,
     ) -> Response {
+        let document = crate::parse_html(&plaintext);
         let mut out = vec![];
 
         let table_selector =
