@@ -1,6 +1,7 @@
 //! A simple terminal interface, only in Finnish for now.
 //! You must enable the "tui"-feature in order to use this module.
 
+use crate::structs::kirja::Kirja;
 use crate::{search_book, search_book_from_all_sources};
 use anyhow::Context;
 use console::Term;
@@ -33,12 +34,14 @@ pub async fn start_tui() {
     term.clear_screen().unwrap();
     term.write_line("Haetaan...").unwrap();
 
-    let results: Vec<crate::structs::kirja::Kirja>;
+    let results: Vec<Kirja>;
     if source_index == 0 {
         results = search_book_from_all_sources(&input, &None)
             .await
-            .context("Kirjojen haku epäonnistui")
-            .unwrap();
+            .iter()
+            .map(|r| (r.as_ref().unwrap().clone()))
+            .flat_map(|v| v)
+            .collect();
     } else {
         let actual_index = source_index - 1; // Substract one as we added an option
         results = search_book(

@@ -81,12 +81,17 @@ pub async fn search_book(
 }
 
 /// Search a book from all sources included in the library
-pub async fn search_book_from_all_sources(name: &String, cache: &Option<&mut Cache>) -> Response {
-    let mut out = vec![];
-    for scraper in sources::AVAILABLE_SOURCES {
-        let mut items = search_book(name, scraper, cache).await?;
-        out.append(&mut items);
-    }
-
-    Ok(out)
+pub async fn search_book_from_all_sources(
+    name: &String,
+    cache: &Option<&mut Cache>,
+) -> Vec<Response> {
+    let handles = sources::AVAILABLE_SOURCES
+        .iter()
+        .map(|scraper| async {
+            let items = search_book(name, *scraper, cache).await?;
+            //println!("{:?} done", sname);
+            Ok(items)
+        })
+        .collect::<Vec<_>>();
+    futures::future::join_all(handles).await
 }

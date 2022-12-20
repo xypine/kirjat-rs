@@ -1,7 +1,7 @@
 [package]
 name = "kirjat-rs"
 description = "provides prices for finnish textbooks from multiple stores"
-version = "0.6.2"
+version = "0.7.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/xypine/kirjat-rs"
@@ -30,7 +30,11 @@ console = { version = "0.15.1", optional = true }
 thiserror = "1.0"
 async-trait = "0.1.57"
 tokio = { version = "1.21.2", optional = true, features = ["full"] }
+futures = "0.3.25"
 
 [features]
 default = []
 tui = ["dialoguer", "console", "tokio"]
+
+[profile.release]
+lto = true

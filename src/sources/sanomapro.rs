@@ -96,7 +96,6 @@ impl Source for Sanomapro {
 
     async fn parse_document(&self, plaintext: String, book_name: &String, cache: &Option<&mut Cache>) -> Response {
         let document = crate::parse_html(&plaintext);
-        let mut out = vec![];
 
         let key = self.extract_key(document)?;
         //println!("Sanomapro key: {}", key);
@@ -112,7 +111,7 @@ impl Source for Sanomapro {
                 if let Some(hits) = data.get("hits") {
                     match hits {
                         serde_json::Value::Array(arr) => {
-                            for hit in arr {
+                            let handles = arr.iter().map(|hit| async move {
                                 match hit {
                                     serde_json::Value::Object(map) => {
                                         if 
@@ -140,7 +139,7 @@ impl Source for Sanomapro {
                                                                 }
                                                             }
                                                         }
-                                                        out.push(Kirja {
+                                                        return Some(Kirja {
                                                             name: title.to_string(),
                                                             id: id.to_string(),
                                                             links: Links {
@@ -149,16 +148,20 @@ impl Source for Sanomapro {
                                                             },
                                                             source: self.get_store_url().to_string(),
                                                             conditions
-                                                        })
+                                                        });
                                                     },
                                                     Err(_err) => {},
                                                 }
                                             }
                                         }
+                                        
                                     },
                                     _ => {}
                                 }
-                            }
+                                return None;
+                            });
+                            let k = futures::future::join_all(handles).await;
+                            return Ok(k.iter().filter(|o| o.is_some()).map(|k| k.clone().unwrap()).collect());
                         }
                         _ => {},
                     }
@@ -167,6 +170,6 @@ impl Source for Sanomapro {
             _ => {},
         }
 
-        Ok(out)
+        Ok(vec![])
     }
 }
