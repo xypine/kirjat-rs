@@ -7,8 +7,11 @@ use anyhow::Context;
 use console::Term;
 use dialoguer::Input;
 use dialoguer::{theme::ColorfulTheme, Select};
+use tracing_subscriber;
 
 pub async fn start_tui() {
+    tracing_subscriber::fmt::init();
+
     let term = Term::stdout();
     term.set_title("Kirjat-rs");
     term.clear_screen().unwrap();
@@ -46,7 +49,7 @@ pub async fn start_tui() {
         let actual_index = source_index - 1; // Substract one as we added an option
         results = search_book(
             &input,
-            crate::sources::AVAILABLE_SOURCES[actual_index],
+            &crate::sources::get_instance(crate::sources::AVAILABLE_SOURCES[actual_index]),
             &None,
         )
         .await

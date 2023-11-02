@@ -33,23 +33,26 @@ pub struct RequestDetails {
 
 /// All included sources
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum Sources {
+pub enum BuiltInSource {
     /// Redirects to Suomalainen, since Jamera doesn't exist anymore
     Jamera,
     Sanomapro,
     Otava,
     Suomalainen,
 }
-pub const AVAILABLE_SOURCES: [Sources; 3] =
-    [Sources::Suomalainen, Sources::Sanomapro, Sources::Otava];
+pub const AVAILABLE_SOURCES: [BuiltInSource; 3] = [
+    BuiltInSource::Suomalainen,
+    BuiltInSource::Sanomapro,
+    BuiltInSource::Otava,
+];
 
 /// Get an instance of a source enum
-pub fn get_instance(selection: Sources) -> Box<dyn Source> {
+pub fn get_instance(selection: BuiltInSource) -> Box<(dyn Source + 'static)> {
     match selection {
-        Sources::Jamera => Box::new(suomalainen::Suomalainen::new()),
-        Sources::Suomalainen => Box::new(suomalainen::Suomalainen::new()),
-        Sources::Sanomapro => Box::new(sanomapro::Sanomapro::new()),
-        Sources::Otava => Box::new(otava::Otava::new()),
+        BuiltInSource::Jamera => Box::new(suomalainen::Suomalainen::new()),
+        BuiltInSource::Suomalainen => Box::new(suomalainen::Suomalainen::new()),
+        BuiltInSource::Sanomapro => Box::new(sanomapro::Sanomapro::new()),
+        BuiltInSource::Otava => Box::new(otava::Otava::new()),
     }
 }
 

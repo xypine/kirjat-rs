@@ -1,7 +1,7 @@
 [package]
 name = "kirjat-rs"
 description = "provides prices for finnish textbooks from multiple stores"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/xypine/kirjat-rs"
@@ -19,7 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.64"
-moka = "0.9.4"
+moka = { version = "0.9.4", features = ["future"] }
 reqwest = { version = "0.11" }
 scraper = "0.13"
 serde = { version = "1.0.144", features = ["derive"] }
@@ -31,10 +31,12 @@ thiserror = "1.0"
 async-trait = "0.1.57"
 tokio = { version = "1.21.2", optional = true, features = ["full"] }
 futures = "0.3.25"
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.16", optional = true }
 
 [features]
-default = []
-tui = ["dialoguer", "console", "tokio"]
+default = ["tokio"]
+tui = ["dialoguer", "console", "tracing-subscriber"]
 
 [profile.release]
 lto = true

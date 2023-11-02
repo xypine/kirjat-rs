@@ -2,10 +2,9 @@
 pub mod features;
 pub mod sources;
 pub mod structs;
-//pub mod utils;
 
 use anyhow::{Context, Result};
-use moka::sync::Cache as GenericCache;
+use moka::future::Cache as GenericCache;
 use reqwest::header::HeaderMap;
 use sources::RequestDetails;
 use structs::response::{Response, ResponseError};
@@ -37,7 +36,7 @@ pub async fn get_page_plaintext(
     let text = response.text().await?;
 
     if let Some(cache) = cache {
-        cache.insert(url.to_string(), text.clone());
+        cache.insert(url.to_string(), text.clone()).await;
     }
 
     Ok(text)
@@ -57,11 +56,9 @@ pub fn parse_json(raw: &str) -> Result<serde_json::Value> {
 /// Search a book from a specific source
 pub async fn search_book(
     name: &String,
-    selected_scraper: sources::Sources,
+    scraper: &Box<dyn sources::Source>,
     cache: &Option<&mut Cache>,
 ) -> Response {
-    let scraper = sources::get_instance(selected_scraper);
-
     // println!("Downloading page...");
     let RequestDetails { url, headers } = scraper.get_request_details(&name).await;
     let raw_result = get_page_plaintext(&url, headers, &cache).await;
@@ -88,8 +85,9 @@ pub async fn search_book_from_all_sources(
     let handles = sources::AVAILABLE_SOURCES
         .iter()
         .map(|scraper| async {
-            let items = search_book(name, *scraper, cache).await?;
-            //println!("{:?} done", sname);
+            let scraper_instance = sources::get_instance(*scraper);
+            let items = search_book(name, &scraper_instance, cache).await?;
+            tracing::info!("{} done!", scraper_instance.get_store_name());
             Ok(items)
         })
         .collect::<Vec<_>>();

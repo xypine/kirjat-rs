@@ -22,9 +22,9 @@ impl Sanomapro {
 
     fn extract_key(&self, document: scraper::Html) -> Result<String> {
         let html = document.root_element().html();
-        let key_step = html.split("?key=")
+        let key_step = html.split("var addsearchSettings = {\"siteKey\":\"")
             .collect::<Vec<&str>>().get(1).context("couldn't extract search key (step 1)")?
-            .split("&").collect::<Vec<&str>>();
+            .split("\"").collect::<Vec<&str>>();
         let key = *key_step.get(0).context("couldn't extract search key (step 2)")?;
         Ok(key.to_string())
     }
@@ -90,7 +90,7 @@ impl Source for Sanomapro {
     }
 
     async fn get_request_details(&self, book_name: &String) -> RequestDetails {
-        let url = format!("https://www.sanomapro.fi/haku/?q={}", book_name);
+        let url = format!("https://www.sanomapro.fi/haku/?search={}", book_name);
         RequestDetails { url, headers: None }
     }
 
@@ -100,8 +100,7 @@ impl Source for Sanomapro {
         let key = self.extract_key(document)?;
         //println!("Sanomapro key: {}", key);
 
-        let new_url = format!("{}{}?term={}&fuzzy=auto&page=1&limit=3&sort=relevance&order=desc", SEARCH_API_URL_BASE, key, book_name);
-        //println!("Url: {}", new_url);
+        let new_url = format!("{}{}?term={}&fuzzy=auto&page=1&limit=20&sort=relevance&order=desc", SEARCH_API_URL_BASE, key, book_name);
         //println!("requesting page...");
         let html = crate::get_page_plaintext(&new_url, None, cache).await?;
         let data = crate::parse_json(&html)?;
